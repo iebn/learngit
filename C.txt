@@ -1,0 +1,188 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#define MAX_LEN 100
+enum type_token {IDENTIFIER,QUALIFIER,TYPE};
+typedef struct token{
+	char string[100];
+	char type;
+}token;
+token tmp_token;
+typedef struct stack{
+	token array[MAX_LEN];
+	int top;
+}stack;
+struct stack token_stack;
+void init(stack *sta)
+{
+	sta->top=-1;
+}
+int push(stack *sta,token s)
+{
+	if(sta->top>=254)
+	{
+		printf("the stack is full.\n");
+		return 1;
+	}
+	else
+	{
+		sta->array[++(sta->top)]=s;
+	}
+	return 0;
+}
+token pop(stack *sta)
+{
+	if(sta->top==-1)
+	{
+		printf("ERROR,the stack is empty!\n");
+	}
+	else
+	{
+		return sta->array[(sta->top)--];
+	}
+	
+}
+int stack_empty(const stack s)
+{
+	if(s.top==-1)
+		return 0;
+	else
+		return 1;
+}
+token top_stack(const stack s)
+{
+	if(stack_empty(s)==0)
+	{
+		printf("ERROR the stack is empty!\n");
+	}
+	else
+		return s.array[s.top];
+}
+enum type_token classify_string();
+void gettoken()
+{//读取token函数，如果是字母，数字，下划线就一直读取，否则就停止存入tmp_token中处理
+	memset(tmp_token.string,'\0',sizeof(tmp_token.string));//先把tmp_token清空
+	char *p=tmp_token.string;
+	while((*p=getchar())==' ');//略过空白字符
+	if(isalnum(*p) || *p=='_'){
+		//读入的标志符要是字母，数字或者下划线，表示是标志符
+		while(1)
+		{
+			*(++p)=getchar();
+			if(isalnum(*p) || *p=='_')
+				continue;
+			else
+				break;
+		}
+		ungetc(*p,stdin);//把非满足的字符放回缓冲区，下次再用
+		*p='\0';
+		tmp_token.type=classify_string();
+		return;
+	}
+	if(*p=='*'){
+		strcpy(tmp_token.string,"pointer to ");
+		tmp_token.type='*';
+		return;
+	}
+	tmp_token.string[1]='\0';
+	tmp_token.type=*p;
+	return;
+}
+enum type_token classify_string()
+{//推断标志符的类型
+	char *s=tmp_token.string;
+	if(!strcmp(s,"const")){
+		strcpy(s,"read-only ");
+		return QUALIFIER;
+	}
+	if(!strcmp(s,"volatile")) return QUALIFIER;
+	if(!strcmp(s,"extern")) return QUALIFIER;
+	if(!strcmp(s,"void")) return TYPE;
+	if(!strcmp(s,"char")) return TYPE;
+	if(!strcmp(s,"signed")) return TYPE;
+	if(!strcmp(s,"unsigned")) return TYPE;
+	if(!strcmp(s,"short")) return TYPE;
+	if(!strcmp(s,"int")) return TYPE;
+    if(!strcmp(s,"long")) return TYPE;
+    if(!strcmp(s,"float")) return TYPE;
+    if(!strcmp(s,"double")) return TYPE;
+    if(!strcmp(s,"struct")) return TYPE;
+	if(!strcmp(s,"union")) return TYPE;
+	if(!strcmp(s,"enum")) return TYPE;
+	return IDENTIFIER;
+}
+void read_first_identifier(){
+	gettoken();
+	while(tmp_token.type!=IDENTIFIER){
+		push(&token_stack,tmp_token);
+		gettoken();
+	}
+	printf("%s is ",tmp_token.string);
+	gettoken();
+}
+void deal_with_array()
+{
+	while(tmp_token.type=='[')
+	{
+		printf("array");
+		gettoken();
+		if(isdigit(tmp_token.string[0]))
+		{
+			printf(" 0..%d ",atoi(tmp_token.string)-1);
+			gettoken();
+		}
+		gettoken();//读取‘】’之后的token
+		printf("of ");
+	}
+}
+void deal_with_function()
+{
+	while(tmp_token.type != ')')
+		gettoken();
+	gettoken();
+	printf(" function returning ");
+}
+void deal_with_pointer()
+{
+	token t;
+	t=top_stack(token_stack);
+	while(t.type=='*')
+	{
+		printf("%s",t.string);
+		pop(&token_stack);
+		t=top_stack(token_stack);
+	}
+}
+void deal_with_declarator(){//递归处理的过程
+	switch(tmp_token.type){
+	case '[': deal_with_array();break;
+	case '(': deal_with_function();
+	}
+	deal_with_pointer();
+	while(stack_empty(token_stack)==1)
+	{
+		token t=top_stack(token_stack);
+		if(t.type=='('){
+			pop(&token_stack);
+			gettoken();//读取‘）’之后的符号
+			deal_with_declarator();
+		}
+		else
+		{
+			printf("%s",pop(&token_stack).string);
+		}
+	}
+}
+ 
+ 
+ 
+int main()
+{
+	init(&token_stack);
+    read_first_identifier();
+	deal_with_declarator();
+	printf("\n");
+	getchar();
+	return 0;
+}
