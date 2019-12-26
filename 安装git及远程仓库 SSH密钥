@@ -1,0 +1,33 @@
+  
+
+
+  安装git
+  git config --global user.name "yourname"
+  git config --global user.email "youremail"
+  
+  mkdir learngit
+  git init
+  命令把这个目录变成Git可以管理的仓库
+  
+  
+  git add readme.txt
+  git commit -m "message"
+  
+  
+  配置远程库
+  github网页端添加库，两库名保持一致
+  配置ssh密码
+  cd ~/.ssh
+  ssh-keygen -t rsa -C "youremail"
+  按3个回车，密码为空。
+  ssh-add ~/.ssh/id_rsa
+  
+  若执行ssh-add /path/to/xxx.pem是出现这个错误:Could not open a connection to your authentication agent，则先执行如下命令即可：
+
+　　ssh-agent bash
+  ssh -T git@github.com
+  
+  git remote add origin git@github.com:user.name/learngit.git
+  git push -u origin master
+  在此之后都可以用
+   git push origin master
